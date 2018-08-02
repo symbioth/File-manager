@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+		<title>File Manager</title>
+		<link rel="stylesheet" href="./assets/css/vendor.bundle.css"/>
+		<link rel="stylesheet" href="./assets/css/app.bundle.css"/>
+		<link rel="stylesheet" href="./assets/css/theme-a.css"/>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.2.0/css/material-design-iconic-font.min.css"/>
+		<link rel="stylesheet" href="./assets/css/style.css"/>
+		<style type="text/css">.jqstooltip { position: absolute;left: 0px;top: 0px;visibility: hidden;background: rgb(0, 0, 0) transparent;background-color: rgba(0,0,0,0.6);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000);-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000)";color: white;font: 10px arial, san serif;text-align: left;white-space: nowrap;padding: 5px;border: 1px solid white;z-index: 10000;}.jqsfield { color: white;font: 10px arial, san serif;text-align: left;}
+		</style>
+	</head>
+
+<body class="" style="" ng-app="app" ng-controller="AppCtrl" ng-init="init()" ng-cloak>
+	<div id="app_wrapper">
+		<header id="app_topnavbar-wrapper">
+			<nav role="navigation" class="navbar topnavbar">
+				<div class="nav-wrapper">
+					<ul class="nav navbar-nav pull-right">
+						<li class="dropdown avatar-menu">
+							<a href="javascript:void(0)" data-toggle="dropdown" aria-expanded="false">
+								<span class="meta">
+									<span class="name">{{ currentUser.name.display_name }}</span>
+									<span class="caret"></span>
+								</span>
+							</a>
+							<ul class="dropdown-menu btn-primary dropdown-menu-right">
+								<li>
+									<a href="javascript:;"><i class="zmdi zmdi-account"></i> Profile</a>
+								</li>
+								<li>
+									<a href="javascript:;"><i class="zmdi zmdi-email"></i> Messages</a>
+								</li>
+								<li>
+									<a href="javascript:;"><i class="zmdi zmdi-settings"></i> Account Settings</a>
+								</li>
+								<li>
+									<a href="javascript:;"><i class="zmdi zmdi-sign-in"></i> Sign Out</a>
+								</li>
+							</ul>
+						</li>
+					</ul>
+									
+				</div>
+			</nav>
+		</header>
+		
+		
+		<section id="content_outer_wrapper" class="file-manager">
+			<div id="content_wrapper" class="rightnav_v2 lg">
+				<div id="header_wrapper" class="header-md" style="height: 100px">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-xs-12">
+								<header id="header">
+									<h1>File Manager</h1>
+								</header>
+							</div>
+						</div>
+					</div>
+					<ul class="card-actions icons lg alt-actions right-top">
+						
+						<li class="dropdown">
+							<a href="javascript:void(0)" data-toggle="dropdown" aria-expanded="false">
+								<i class="zmdi zmdi-view-list-alt"></i>
+							</a>
+							<ul class="dropdown-menu dropdown-menu-right">
+								<li>
+									<select style="width: 95%; margin-bottom: 10px;">
+										<option ng-repeat="driver in availableDrivers track by $index">{{ driver }}</option>
+									</select>
+								</li> 
+
+								<li>
+									Sort by:
+									<select ng-model="sortBy" style="width: 95%" ng-change="refresh()">
+										<option>Name</option>
+										<option>Size</option>
+										<option>Date</option>
+									</select>
+								</li> 
+							</ul>
+						</li>
+
+						<li>
+							<a href="javascript:void(0)" class="drawer-trigger" data-drawer="toggle-right">
+								<i class="zmdi zmdi-info"></i>
+							</a>
+						</li>
+					</ul>
+					<nav class="btn-fab-group" style="z-index: 1">
+						<button class="btn btn-primary btn-fab fab-menu" data-fab="down">
+							<i class="zmdi zmdi-plus"></i>
+						<div class="ripple-container"></div></button>
+						<ul class="nav-sub">
+							<li style="transform: translateY(48px);"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="New Folder"><a href="javascript:void(0)" data-toggle="modal" data-target="#new_folder_modal" class="btn btn-info btn-fab btn-fab-sm"><i class="zmdi zmdi-collection-plus"></i><div class="ripple-container"></div></a></span> </li>
+			
+							<li style="transform: translateY(192px);">
+								<a href="javascript:void(0)" data-toggle="tooltip" data-placement="left" title="" class="btn btn-info btn-fab btn-fab-sm" data-original-title="Upload File">
+									<div class="icon-upload"><label for="file-input"><i class="zmdi zmdi-file-plus"></i></label>
+										<input id="file-input" type="file"></div>
+								<div class="ripple-container"></div></a>
+							</li>
+						</ul>
+					</nav>
+				</div>		
+				
+				<div id="content" class="container-fluid">
+					<div class="content-body">
+						<section id="gridview" class="m-t-30">
+							Path:
+							<button class="btn btn-info btn-sm" ng-repeat="folder in pathButtons track by $index" ng-click="backTo($index)">{{ folder == '' ? 'root' : folder }}</button>
+							<h3>Folders</h3> 
+							<button class="btn btn-info btn-sm pb-2" ng-click="back()" ng-class="{'disabled': pathsHistory.length < 2}">Back</button>
+							<span ng-show="itemToCopy.length > 0"> 
+								Copied path: {{ itemToCopy }} 
+								<button class="btn btn-info btn-sm" ng-click="paste()">
+									<i class="zmdi zmdi-copy"></i>
+									Paste
+								</button>
+
+								<button class="btn btn-info btn-sm" ng-click="moveSingle()">
+									<i class="zmdi zmdi-collection-plus"></i>
+									Move
+								</button>
+
+							</span>
+
+							<ul class="folders" id="folders">
+								<li ng-repeat="folder in currentFolder track by $index">
+
+									<div ng-class="{'selected': $index == selectedFolder}" class="card card-folder card-item enable-context-menu folder-holder" data-item-selected="false" data-item-type="Folder" data-item-size="72 KB" data-item-location="Projects" data-item-modified="Jan 3, 2017" data-item-opened="Jan 5, 2017" data-item-created="Jan 1, 2017" data-item-offline="true" ng-dblclick="getAll(folder.path_lower)" ng-click="getFileMetadata(folder.path_lower)">
+									<div class="card-heading" ng-click="selectFolder($index)">
+										<i class="zmdi zmdi-folder"></i>
+									</div>
+									<div class="card-body" ng-click="selectFolder($index)">
+										<span class="title">{{ folder.name }}</span>
+									</div>
+									<div class="card-footer">
+										<i class="zmdi zmdi-copy" ng-click="copy(folder.path_lower)"></i>
+										<i class="zmdi zmdi-delete" ng-click="delete(folder.path_lower)"></i>
+									</div>
+								</div>
+								</li>
+							</ul>
+						</section>
+
+						<section id="files">
+							<h3>Files</h3>
+							<ul class="files">
+								<li ng-repeat="file in currentFiles track by $index">
+									<div ng-class="{'selected': $index == selectedFile}" class="card card-folder card-item enable-context-menu folder-holder" data-item-selected="false" data-item-type="Folder" data-item-size="72 KB" data-item-location="Projects" data-item-modified="Jan 3, 2017" data-item-opened="Jan 5, 2017" data-item-created="Jan 1, 2017" data-item-offline="true" ng-click="getFileMetadata(file.path_lower)">
+									<div class="card-heading" ng-click="selectFolder($index)">
+										<i class="zmdi zmdi-file-text"></i>
+									</div>
+									<div class="card-body" ng-click="selectFile($index)">
+										<span class="title">{{ file.name }}</span>
+									</div>
+									<div class="card-footer" style="width: auto;">
+										<i class="zmdi zmdi-copy" ng-click="copy(file.path_lower)"></i>
+										<i class="zmdi zmdi-delete" ng-click="delete(file.path_lower)"></i>
+									</div>
+								</div>
+							</li>
+						</ul>
+					</section>
+				</div>
+			</div>
+
+		<aside id="rightnav" class="item-panel p-15 scrollbar mCustomScrollbar _mCS_2 mCS-autoHide" style="overflow: visible;"><div id="mCSB_2" class="mCustomScrollBox mCS-minimal-dark mCSB_vertical mCSB_outside" style="max-height: none;" tabindex="0"><div id="mCSB_2_container" class="mCSB_container" style="position:relative; top:0; left:0;" dir="ltr">
+			<div class="tabpanel">
+					Details:
+			</div>
+			<span style="margin-right: 20px" ng-show=" ! isNameEdit">Name: {{ metaData.name }}</span>
+
+			<input type="text" name="name" ng-model="metaData.name" ng-show="isNameEdit">
+
+			<i ng-click="editName()" class="zmdi zmdi-edit" ng-show=" ! isNameEdit" style="cursor: pointer;"></i>
+
+			<i class="zmdi zmdi-check" ng-click="rename()"  ng-show="isNameEdit" style="padding-right: 10px; font-size: 20px;cursor: pointer;"></i>
+
+			<i class="zmdi zmdi-close" ng-click="cancelName()"  ng-show="isNameEdit" style="font-size: 20px;cursor: pointer;"></i>
+
+			<div class="tab-content" style="padding-bottom: 0;">
+				<div class="tab-pane fadeIn active" id="file-detail-panel">
+					<figure id="current-img"><img ng-src="{{ thumbnail }}" style="width: 300px; height: 150px;"></figure>
+
+					<ul id="item-details" class="style-none border-grey-top-1px border-grey-bottom-1px p-t-15 p-b-15">
+						<li id="type"><span class="title">Type</span><span class="info">{{ type }}</span></li>
+						<li id="location"><span class="title">Location</span><span class="info">{{ metaData.path_display }}</span></li>
+						<li id="modified" ng-show="type == 'file'"><span class="title">Modified</span><span class="info">{{ metaData.client_modified }}</span></li>
+						<li id="created" ng-show="type == 'file'"><span class="title">Size</span><span class="info">{{ metaData.size + ' bytes' }}</span></li>
+						<li ng-show="type == 'file'">
+							<button class="btn btn-info btn-sm" style="padding-right: 5px; padding-left: 5px; text-transform: none" ng-click="getTempLink(metaData.path_display)">			Temp Link
+							</button>
+							<span class="tempLink" ng-show="tempLink.length > 0" style="padding-right: 10px;">{{ tempLink }}</span>
+						</li>
+					</ul>
+				</div>
+
+			</div>
+		</div>
+		</div>
+		</aside>
+
+<section id="chat_compose_wrapper">
+	<div class="tippy-top">
+		<div class="recipient">Allison Grayce</div>
+		<ul class="card-actions icons  right-top">
+			<li>
+				<a href="javascript:void(0)">
+					<i class="zmdi zmdi-videocam"></i>
+				</a>
+			</li>
+			<li class="dropdown">
+				<a href="javascript:void(0)" data-toggle="dropdown" aria-expanded="false">
+					<i class="zmdi zmdi-more-vert"></i>
+				</a>
+				<ul class="dropdown-menu btn-primary dropdown-menu-right">
+					<li>
+						<a href="javascript:void(0)">Option One</a>
+					</li>
+					<li>
+						<a href="javascript:void(0)">Option Two</a>
+					</li>
+					<li>
+						<a href="javascript:void(0)">Option Three</a>
+					</li>
+				</ul>
+			</li>
+			<li>
+				<a href="javascript:void(0)" data-chat="close">
+					<i class="zmdi zmdi-close"></i>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<div class="chat-wrapper scrollbar mCustomScrollbar _mCS_3 mCS-autoHide mCS_no_scrollbar" style="position: relative; overflow: visible;"><div id="mCSB_3" class="mCustomScrollBox mCS-minimal-dark mCSB_vertical mCSB_outside" style="max-height: none;" tabindex="0"><div id="mCSB_3_container" class="mCSB_container mCS_y_hidden mCS_no_scrollbar_y" style="position:relative; top:0; left:0;" dir="ltr">
+		<div class="chat-message scrollbar mCustomScrollbar _mCS_4 mCS-autoHide mCS_no_scrollbar" style="position: relative; overflow: visible;"><div id="mCSB_4" class="mCustomScrollBox mCS-minimal-dark mCSB_vertical mCSB_outside" style="max-height: none;" tabindex="0"><div id="mCSB_4_container" class="mCSB_container mCS_y_hidden mCS_no_scrollbar_y" style="position:relative; top:0; left:0;" dir="ltr">
+			<div class="chat-message chat-message-recipient">
+				<div class="chat-message-wrapper">
+					<div class="chat-message-content">
+						<p>Hey Mike, we have funding for our new project!</p>
+					</div>
+					<div class="chat-details">
+						<span class="today small">01/12/2018</span>
+					</div>
+				</div>
+			</div>
+			<div class="chat-message chat-message-sender">
+				<div class="chat-message-wrapper ">
+					<div class="chat-message-content">
+						<p>Awesome! Photo booth banh mi pitchfork kickstarter whatever, prism godard ethical 90's cray selvage.</p>
+					</div>
+					<div class="chat-details">
+						<span class="today small">01/12/2018</span>
+					</div>
+				</div>
+			</div>
+			<div class="chat-message chat-message-recipient">
+				<div class="chat-message-wrapper">
+					<div class="chat-message-content">
+						<p> Artisan glossier vaporware meditation paleo humblebrag forage small batch.</p>
+					</div>
+					<div class="chat-details">
+						<span class="today small">01/12/2018</span>
+					</div>
+				</div>
+			</div>
+			<div class="chat-message chat-message-sender">
+				<div class="chat-message-wrapper">
+					<div class="chat-message-content">
+						<p>Bushwick letterpress vegan craft beer dreamcatcher kickstarter.</p>
+					</div>
+					<div class="chat-details">
+						<span class="today small">01/12/2018</span>
+					</div>
+				</div>
+			</div>
+		</div></div><div id="mCSB_4_scrollbar_vertical" class="mCSB_scrollTools mCSB_4_scrollbar mCS-minimal-dark mCSB_scrollTools_vertical" style="display: none;"><div class="mCSB_draggerContainer"><div id="mCSB_4_dragger_vertical" class="mCSB_dragger" style="position: absolute; min-height: 50px; height: 0px; top: 0px;"><div class="mCSB_dragger_bar" style="line-height: 50px;"></div></div><div class="mCSB_draggerRail"></div></div></div></div>
+	</div></div><div id="mCSB_3_scrollbar_vertical" class="mCSB_scrollTools mCSB_3_scrollbar mCS-minimal-dark mCSB_scrollTools_vertical" style="display: none;"><div class="mCSB_draggerContainer"><div id="mCSB_3_dragger_vertical" class="mCSB_dragger" style="position: absolute; min-height: 50px; height: 0px; top: 0px;"><div class="mCSB_dragger_bar" style="line-height: 50px;"></div></div><div class="mCSB_draggerRail"></div></div></div></div>
+	<footer id="compose-footer">
+		<form class="form-horizontal compose-form">
+			<ul class="card-actions icons left-bottom">
+				<li>
+					<a href="javascript:void(0)">
+						<i class="zmdi zmdi-attachment-alt"></i>
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)">
+						<i class="zmdi zmdi-mood"></i>
+					</a>
+				</li>
+			</ul>
+			<div class="form-group m-10 p-l-75 is-empty">
+				<div class="input-group">
+					<label class="sr-only">Leave a comment...</label>
+					<input type="text" class="form-control form-rounded input-lightGray" placeholder="Leave a comment..">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-blue btn-fab  btn-fab-sm">
+							<i class="zmdi zmdi-mail-send"></i>
+						</button>
+					</span>
+				</div>
+			</div>
+		</form>
+	</footer>
+</section>
+</div>
+<div class="modal fade" id="new_folder_modal" tabindex="-1" role="dialog" aria-labelledby="new_folder_modal" style="display: none;">
+	<div class="modal-dialog modal-sm" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				
+				<h4 class="modal-title" id="new_folder_modal_label">New Folder Name</h4>
+				<ul class="card-actions icons right-top">
+					
+					<a href="javascript:void(0)" data-dismiss="modal" class="text-white" aria-label="Close">
+						<i class="zmdi zmdi-close"></i>
+					</a>
+					
+				</ul>
+			</div>
+			<div class="modal-body">
+				<form class="p-l-15 p-r-15">
+					<div class="form-group label-floating is-empty">
+						<label class="control-label">Folder Name</label>
+						<input type="text" class="form-control" ng-model="createFolderName">
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-success" ng-click="createFolder()">Create</button>
+			</div>
+		</div>
+		<!-- modal-content -->
+	</div>
+	<!-- modal-dialog -->
+</div>
+<div class="modal fade" id="new_doc_modal" tabindex="-1" role="dialog" aria-labelledby="new_doc_modal" style="display: none;">
+	<div class="modal-dialog modal-sm" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				
+				<h4 class="modal-title" id="new_doc_modal_label">New Document Name</h4>
+				<ul class="card-actions icons right-top">
+					
+					<a href="javascript:void(0)" data-dismiss="modal" class="text-white" aria-label="Close">
+						<i class="zmdi zmdi-close"></i>
+					</a>
+				</ul>
+			</div>
+			<div class="modal-body">
+				<form class="p-l-15 p-r-15">
+					<div class="form-group label-floating is-empty">
+						<label class="control-label">Document Name</label>
+						<input type="text" class="form-control">
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel<div class="ripple-container"><div class="ripple ripple-on ripple-out" style="left: 70.7969px; top: 19px; background-color: rgb(104, 134, 150); transform: scale(14);"></div><div class="ripple ripple-on ripple-out" style="left: 63.9688px; top: 14.5625px; background-color: rgb(104, 134, 150); transform: scale(14.5);"></div></div></button>
+				<button type="button" class="btn btn-success">Ok</button>
+			</div>
+		</div>
+		<!-- modal-content -->
+	</div>
+	<!-- modal-dialog -->
+</div>
+
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="/assets/js/angular.js"></script>
+<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js" type="text/javascript"></script>
+<script src="./assets/js/fm.js"></script>
+<script src="./assets/js/app.js"></script>
+<script src="./assets/js/vendor.bundle.js"></script>
+<script src="./assets/js/app.bundle.js"></script>
+
+</body>
+</html>
